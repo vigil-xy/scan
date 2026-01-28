@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/verify_installer.sh – ULTRA-ROBUST macOS/Linux version
+# scripts/verify_installer.sh – FINAL macOS/Linux version
 
 set -euo pipefail
 
@@ -24,28 +24,12 @@ pubkey="$TMP_DIR/vigil_ed25519_pub.pem"
 checksum="$TMP_DIR/vigil.sh.sha256"
 fingerprint_file="$TMP_DIR/fingerprint.txt"
 
-# Check prerequisites
-for cmd in curl openssl awk; do
-  if ! command -v "$cmd" &>/dev/null; then
-    echo -e "${RED}[!] Required command not found: $cmd${NC}"
-    exit 1
-  fi
-done
-
-echo -e "${YELLOW}[*] Downloading release assets to $TMP_DIR${NC}"
+echo -e "${YELLOW}[*] Downloading release assets${NC}"
 curl -sSL -o "$installer" "$INSTALLER_URL"
 curl -sSL -o "$sigfile" "$SIG_URL"
 curl -sSL -o "$pubkey" "$PUBKEY_URL"
 curl -sSL -o "$checksum" "$CHECKSUM_URL"
 curl -sSL -o "$fingerprint_file" "$FINGERPRINT_URL"
-
-# Verify all files exist
-for file in "$installer" "$sigfile" "$pubkey" "$checksum" "$fingerprint_file"; do
-  if [ ! -f "$file" ]; then
-    echo -e "${RED}[!] Download failed: $file not found${NC}"
-    exit 1
-  fi
-done
 
 echo -e "${YELLOW}[*] Verifying checksum${NC}"
 expected=$(awk '{print $1}' "$checksum")
@@ -54,34 +38,23 @@ if command -v sha256sum &>/dev/null; then
 else
   actual=$(shasum -a 256 "$installer" | awk '{print $1}')
 fi
-if [ "$actual" = "$expected" ]; then
-  echo -e "${GREEN}✅ Checksum verified${NC}"
-else
-  echo -e "${RED}[!] Checksum FAILED${NC}"
-  echo "Expected: $expected"
-  echo "Got:      $actual"
-  exit 1
-fi
+[ "$actual" = "$expected" ] && echo -e "${GREEN}✅ Checksum verified${NC}" || { echo -e "${RED}[!] Checksum FAILED${NC}"; exit 1; }
 
 echo -e "${YELLOW}[*] Verifying signature${NC}"
-if openssl dgst -sha256 -verify "$pubkey" -signature "$sigfile" "$installer" 2>/dev/null; then
+# CRITICAL: Ed25519 requires -rawin (no external digest)
+if openssl pkeyutl -verify -pubin -inkey "$pubkey" -rawin -in "$installer" -sigfile "$sigfile" 2>/dev/null; then
   echo -e "${GREEN}✅ Signature verified${NC}"
 else
   echo -e "${RED}[!] Signature verification FAILED${NC}"
-  echo "Debug: Running with verbose output..."
-  openssl dgst -sha256 -verify "$pubkey" -signature "$sigfile" "$installer"
+  echo "Debug: Full output:"
+  openssl pkeyutl -verify -pubin -inkey "$pubkey" -rawin -in "$installer" -sigfile "$sigfile"
   exit 1
 fi
 
 echo -e "${YELLOW}[*] Verifying public key fingerprint${NC}"
 pubkey_fingerprint=$(openssl pkey -pubin -in "$pubkey" -outform DER 2>/dev/null | shasum -a 256 | awk '{print $1}')
 expected_fingerprint=$(cat "$fingerprint_file" | tr -d '\n')
-if [ "$pubkey_fingerprint" = "$expected_fingerprint" ]; then
-  echo -e "${GREEN}✅ Fingerprint verified${NC}"
-else
-  echo -e "${RED}[!] Fingerprint mismatch${NC}"
-  exit 1
-fi
+[ "$pubkey_fingerprint" = "$expected_fingerprint" ] && echo -e "${GREEN}✅ Fingerprint verified${NC}" || { echo -e "${RED}[!] Fingerprint mismatch${NC}"; exit 1; }
 
 echo -e "${GREEN}[✅] Installer verified successfully!${NC}"
 echo ""
