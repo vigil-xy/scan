@@ -1,55 +1,88 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# scripts/verify_installer.sh – ULTRA-ROBUST macOS/Linux version
+
 set -euo pipefail
 
-RELEASE_BASE="https://github.com/vigil-xy/scan/releases/download/v0.1.0"
-RAW_BASE="https://raw.githubusercontent.com/vigil-xy/scan/main/build/release_assets"
-TMPDIR=$(mktemp -d)
-cleanup(){ rm -rf "$TMPDIR"; }
-trap cleanup EXIT
+# Colors
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
-echo "[*] Downloading release assets to $TMPDIR"
-curl -sSL -o "$TMPDIR/vigil.sh" "$RELEASE_BASE/vigil.sh"
-curl -sSL -o "$TMPDIR/vigil.sh.sha256" "$RELEASE_BASE/vigil.sh.sha256"
-curl -sSL -o "$TMPDIR/vigil.sh.sig" "$RELEASE_BASE/vigil.sh.sig" || true
-curl -sSL -o "$TMPDIR/vigil_ed25519_pub.pem" "$RELEASE_BASE/vigil_ed25519_pub.pem"
-curl -sSL -o "$TMPDIR/expected_fingerprint.txt" "$RAW_BASE/vigil_ed25519_pub_fingerprint.txt"
+# URLs
+INSTALLER_URL="https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh"
+SIG_URL="https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh.sig"
+PUBKEY_URL="https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil_ed25519_pub.pem"
+CHECKSUM_URL="https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh.sha256"
+FINGERPRINT_URL="https://raw.githubusercontent.com/vigil-xy/scan/main/build/release_assets/vigil_ed25519_pub_fingerprint.txt"
 
-echo "[*] Verifying checksum"
-if command -v sha256sum >/dev/null 2>&1; then
-  sha256sum -c "$TMPDIR/vigil.sh.sha256"
-else
-  expected=$(awk '{print $1}' "$TMPDIR/vigil.sh.sha256")
-  actual=$(shasum -a 256 "$TMPDIR/vigil.sh" | awk '{print $1}')
-  if [ "$expected" != "$actual" ]; then
-    echo "[!] Checksum mismatch: expected $expected, got $actual" >&2
+# Temp dir
+TMP_DIR=$(mktemp -d -t vigil_verify_XXXXXX)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+# File paths
+installer="$TMP_DIR/vigil.sh"
+sigfile="$TMP_DIR/vigil.sh.sig"
+pubkey="$TMP_DIR/vigil_ed25519_pub.pem"
+checksum="$TMP_DIR/vigil.sh.sha256"
+fingerprint_file="$TMP_DIR/fingerprint.txt"
+
+# Check prerequisites
+for cmd in curl openssl awk; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo -e "${RED}[!] Required command not found: $cmd${NC}"
     exit 1
   fi
-  echo "[*] Checksum verification: OK"
-fi
+done
 
-if [ -f "$TMPDIR/vigil.sh.sig" ]; then
-  echo "[*] Verifying signature with OpenSSL (Ed25519)"
-  if openssl pkeyutl -verify -pubin -inkey "$TMPDIR/vigil_ed25519_pub.pem" -in "$TMPDIR/vigil.sh" -sigfile "$TMPDIR/vigil.sh.sig"; then
-    echo "[*] Signature verification: OK"
-  else
-    echo "[!] Signature verification FAILED" >&2
-    exit 2
+echo -e "${YELLOW}[*] Downloading release assets to $TMP_DIR${NC}"
+curl -sSL -o "$installer" "$INSTALLER_URL"
+curl -sSL -o "$sigfile" "$SIG_URL"
+curl -sSL -o "$pubkey" "$PUBKEY_URL"
+curl -sSL -o "$checksum" "$CHECKSUM_URL"
+curl -sSL -o "$fingerprint_file" "$FINGERPRINT_URL"
+
+# Verify all files exist
+for file in "$installer" "$sigfile" "$pubkey" "$checksum" "$fingerprint_file"; do
+  if [ ! -f "$file" ]; then
+    echo -e "${RED}[!] Download failed: $file not found${NC}"
+    exit 1
   fi
+done
+
+echo -e "${YELLOW}[*] Verifying checksum${NC}"
+expected=$(awk '{print $1}' "$checksum")
+if command -v sha256sum &>/dev/null; then
+  actual=$(sha256sum "$installer" | awk '{print $1}')
 else
-  echo "[!] Signature file not found; aborting" >&2
-  exit 2
+  actual=$(shasum -a 256 "$installer" | awk '{print $1}')
+fi
+if [ "$actual" = "$expected" ]; then
+  echo -e "${GREEN}✅ Checksum verified${NC}"
+else
+  echo -e "${RED}[!] Checksum FAILED${NC}"
+  echo "Expected: $expected"
+  echo "Got:      $actual"
+  exit 1
 fi
 
-echo "[*] Checking public-key fingerprint against repository canonical value"
-fp=$(openssl pkey -pubin -in "$TMPDIR/vigil_ed25519_pub.pem" -outform DER | sha256sum | awk '{print $1}')
-expected=$(grep -oE '[0-9a-f]{64}' "$TMPDIR/expected_fingerprint.txt" | head -n1 || true)
-if [ "$fp" = "$expected" ]; then
-  echo "[*] Public-key fingerprint matches expected: $fp"
+echo -e "${YELLOW}[*] Verifying signature${NC}"
+if openssl dgst -sha256 -verify "$pubkey" -signature "$sigfile" "$installer" 2>/dev/null; then
+  echo -e "${GREEN}✅ Signature verified${NC}"
 else
-  echo "[!] Public-key fingerprint mismatch" >&2
-  echo "    expected: $expected" >&2
-  echo "    actual:   $fp" >&2
-  exit 3
+  echo -e "${RED}[!] Signature verification FAILED${NC}"
+  echo "Debug: Running with verbose output..."
+  openssl dgst -sha256 -verify "$pubkey" -signature "$sigfile" "$installer"
+  exit 1
 fi
 
-echo "[*] Installer verified successfully. To run: sh $TMPDIR/vigil.sh"
+echo -e "${YELLOW}[*] Verifying public key fingerprint${NC}"
+pubkey_fingerprint=$(openssl pkey -pubin -in "$pubkey" -outform DER 2>/dev/null | shasum -a 256 | awk '{print $1}')
+expected_fingerprint=$(cat "$fingerprint_file" | tr -d '\n')
+if [ "$pubkey_fingerprint" = "$expected_fingerprint" ]; then
+  echo -e "${GREEN}✅ Fingerprint verified${NC}"
+else
+  echo -e "${RED}[!] Fingerprint mismatch${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}[✅] Installer verified successfully!${NC}"
+echo ""
+echo -e "${YELLOW}You can now run:${NC} sh $installer"
