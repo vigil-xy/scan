@@ -7,7 +7,7 @@ set -e
 VERSION="0.1.0"
 REPO="vigil-sec/vigil"
 RELEASE_URL="https://github.com/$REPO/releases/latest/download"
-INSTALL_DIR="${VIGIL_INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${VIGIL_INSTALL_DIR:-$HOME/.local/bin}"
 
 # Detect OS and architecture
 OS=$(uname -s)
@@ -71,16 +71,22 @@ chmod +x "$BINARY_PATH"
 
 # Try to install system-wide (may require sudo)
 if [ -w "$INSTALL_DIR" ]; then
-  cp "$BINARY_PATH" "$INSTALL_DIR/vigil"
+  cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
   echo "✅ Installed to $INSTALL_DIR/vigil"
 elif sudo -n true 2>/dev/null; then
-  sudo cp "$BINARY_PATH" "$INSTALL_DIR/vigil"
+  sudo cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
   echo "✅ Installed to $INSTALL_DIR/vigil"
 else
   # Install to user bin
   mkdir -p ~/.local/bin
-  cp "$BINARY_PATH" ~/.local/bin/vigil
-  echo "✅ Installed to ~/.local/bin/vigil"
+  cp "$BINARY_PATH" ~/.local/bin/vigil-scan
+
+# Add to PATH if not already there
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+  echo "   (added ~/.local/bin to PATH, restart terminal or run: source ~/.zshrc)"
+fi
+  echo "✅ Installed to ~/.local/bin/vigil-scan - added to PATH"
   echo "   (add ~/.local/bin to your PATH)"
 fi
 
