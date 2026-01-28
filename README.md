@@ -3,7 +3,7 @@
 Stop your AI agents from leaking secrets and hijacking ports in 30 seconds.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
+curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh
 ```
 
 **Join the red-team community:** https://discord.gg/7Mzcc2EY
@@ -20,7 +20,7 @@ No config. No agents. Just a single binary that watches your back.
 
 ```bash
 # Install & run immediately
-curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
+curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh
 
 # Or build from source
 git clone https://github.com/vigil-sec/vigil.git
@@ -108,7 +108,7 @@ vigil --mcp --slack $SLACK_WEBHOOK
 
 ```bash
 # Run inside container at startup
-docker run -d my-ai-agent sh -c "curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh && vigil & my-agent"
+docker run -d my-ai-agent sh -c "curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh && vigil & my-agent"
 
 # Or as a sidecar
 docker-compose.yml:
@@ -196,7 +196,7 @@ MIT. Use it. Break it. Fix it. Share it.
 If you're building AI agents, you're already in the red team's crosshairs. Don't ship without guardrails.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
+curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh
 ```
 
 Then star ⭐ the repo and join the Discord. Let's make agentic AI safer. Together.
