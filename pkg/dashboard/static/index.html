@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vigil Security Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-mono p-4">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 p-4 bg-gray-800 rounded border border-red-500">
+      <h1 class="text-2xl font-bold text-red-400">⚡ VIGIL DASHBOARD</h1>
+      <div class="text-sm">
+        <span id="timestamp" class="text-gray-400"></span>
+        <button onclick="window.location.reload()" class="ml-4 px-3 py-1 bg-red-600 hover:bg-red-700 rounded">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="bg-gray-800 p-4 rounded text-center border border-red-500">
+        <div class="text-3xl font-bold text-red-400" id="ports-count">0</div>
+        <div class="text-sm text-gray-400">Rogue Ports</div>
+      </div>
+      <div class="bg-gray-800 p-4 rounded text-center border border-red-500">
+        <div class="text-3xl font-bold text-red-400" id="secrets-count">0</div>
+        <div class="text-sm text-gray-400">Leaked Secrets</div>
+      </div>
+      <div class="bg-gray-800 p-4 rounded text-center border border-red-500">
+        <div class="text-3xl font-bold text-red-400" id="processes-count">0</div>
+        <div class="text-sm text-gray-400">Suspicious Processes</div>
+      </div>
+      <div class="bg-gray-800 p-4 rounded text-center border border-red-500">
+        <div class="text-3xl font-bold text-green-400" id="score">100</div>
+        <div class="text-sm text-gray-400">Security Score</div>
+      </div>
+    </div>
+
+    <!-- Detailed Tables -->
+    <div class="space-y-6">
+      <!-- Rogue Ports -->
+      <div class="bg-gray-800 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400 mb-3 flex items-center">🎯 Rogue Agent Ports <span class="ml-2 px-2 py-1 bg-red-600 rounded text-sm" id="ports-badge">0</span></h2>
+        <div id="ports-table" class="text-sm"></div>
+      </div>
+
+      <!-- Leaked Secrets -->
+      <div class="bg-gray-800 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400 mb-3 flex items-center">🔑 Leaked Secrets <span class="ml-2 px-2 py-1 bg-red-600 rounded text-sm" id="secrets-badge">0</span></h2>
+        <div id="secrets-table" class="text-sm"></div>
+      </div>
+
+      <!-- Suspicious Processes -->
+      <div class="bg-gray-800 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400 mb-3 flex items-center">⚔️ Suspicious Processes <span class="ml-2 px-2 py-1 bg-red-600 rounded text-sm" id="processes-badge">0</span></h2>
+        <div id="processes-table" class="text-sm"></div>
+      </div>
+
+      <!-- Compliance Log -->
+      <div class="bg-gray-800 p-4 rounded border border-green-500">
+        <h2 class="text-xl text-green-400 mb-3">📜 Immutable Audit Log</h2>
+        <div id="audit-log" class="text-xs text-gray-400 max-h-40 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/scan');
+        if (!response.ok) throw new Error('API not available');
+        
+        const data = await response.json();
+        
+        // Update timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // Update stats
+        document.getElementById('ports-count').textContent = data.ports.length;
+        document.getElementById('secrets-count').textContent = data.secrets.length;
+        document.getElementById('processes-count').textContent = data.processes.length;
+        document.getElementById('ports-badge').textContent = data.ports.length;
+        document.getElementById('secrets-badge').textContent = data.secrets.length;
+        document.getElementById('processes-badge').textContent = data.processes.length;
+        
+        // Calculate security score
+        const total = data.ports.length + data.secrets.length + data.processes.length;
+        const score = Math.max(0, 100 - (total * 10));
+        document.getElementById('score').textContent = score;
+        document.getElementById('score').className = score >= 80 ? 'text-3xl font-bold text-green-400' : 
+                                                    score >= 50 ? 'text-3xl font-bold text-yellow-400' : 
+                                                    'text-3xl font-bold text-red-400';
+        
+        // Update tables
+        const formatTable = (items) => items.map(i => `<div class="py-1 border-b border-gray-700">${i}</div>`).join('');
+        document.getElementById('ports-table').innerHTML = formatTable(data.ports) || '<div class="text-green-400">✅ No rogue ports detected</div>';
+        document.getElementById('secrets-table').innerHTML = formatTable(data.secrets) || '<div class="text-green-400">✅ No leaked secrets</div>';
+        document.getElementById('processes-table').innerHTML = formatTable(data.processes) || '<div class="text-green-400">✅ No suspicious processes</div>';
+        
+        // Update audit log
+        const log = data.audit_log || [];
+        document.getElementById('audit-log').innerHTML = log.map(l => `<div>${l.timestamp}: ${l.action} (${l.signature})</div>`).join('');
+      } catch (error) {
+        console.error('Dashboard error:', error);
+        document.querySelectorAll('[id$="-table"]').forEach(el => {
+          el.innerHTML = '<div class="text-yellow-400">⚠️ Scanner offline - run: vigil-scan dashboard</div>';
+        });
+      }
+    }
+
+    loadDashboard();
+    setInterval(loadDashboard, 5000);
+  </script>
+</body>
+</html>

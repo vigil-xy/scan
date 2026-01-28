@@ -16,6 +16,12 @@ import (
 )
 
 func main() {
+	// Check for dashboard command first
+	if len(os.Args) > 1 && os.Args[1] == "dashboard" {
+		runDashboard()
+		return
+	}
+
 	var (
 		_ = flag.Bool("attach-mcp", false, "Attach to MCP server")
 		_ = flag.Bool("attach-docker", false, "Attach to Docker daemon")

@@ -6,110 +6,162 @@
 curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
 ```
 
-**Join the red-team community:** https://discord.gg/7Mzcc2EY
+**Launch your CRM dashboard:** `vigil-scan dashboard` → http://localhost:8080
+
+**Join the community:** https://discord.gg/7Mzcc2EY
 
 ---
 
-## Quick Start
+## 🎯 What It Does
 
-**Install:**
+🔍 **Scans your system for:**
+- Rogue agent ports (Ollama, dev servers, Jupyter)
+- Leaked secrets (AWS, GitHub tokens)
+- Suspicious processes (eBPF monitoring)
+
+⚔️ **Auto-kills threats** (when not in dry-run mode)
+
+📊 **Shows everything in a local CRM-style dashboard**
+
+🔐 **Proves all actions with cryptographic signatures**
+
+---
+
+## 🚀 Install & Use
+
+**Install in one command:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
 ```
 
-**Scan:**
+**Launch dashboard (CRM-style UI):**
+```bash
+vigil-scan dashboard
+```
+
+**Run quick scan:**
 ```bash
 vigil-scan --dry-run
 ```
 
-**Dashboard:** [Launch on Replit](https://replit.com)
+---
+
+## 📊 CRM Dashboard
+
+Your personal security command center:
+
+```bash
+vigil-scan dashboard
+```
+
+Features:
+- **Real-time Security Score** (0-100)
+- **Rogue Ports** detection
+- **Leaked Secrets** tracking
+- **Immutable Audit Log**
+
+**No cloud. No accounts. Fully local.**
+
+Dashboard auto-opens in your browser at `http://localhost:8080`
 
 ---
 
-## What It Scans
+## 🔍 Example Output
 
-🔍 **Rogue agent ports** (11434, 8000, 5000, etc.)  
-🔑 **Leaked secrets** (AWS keys, GitHub tokens, API keys)  
-⚔️ **Suspicious processes** (eBPF monitoring)  
-🔐 **Cryptographic attestation** (immutable logs)
+```
+🔍 Vigil Security Scanner v0.2.0
+📦 Downloading vigil-scan-darwin-arm64...
+✅ Installed to /Users/you/.local/bin/vigil-scan
+
+🚀 Running security scan...
+
+🚨 Rogue agent port 11434 (Ollama) is OPEN
+🚨 Process 12345 (node) has AWS key in env
+📊 Summary: 2 threats detected, 2 actions taken
+✅ Log signed: 0x4f3d...
+
+Launch dashboard: vigil-scan dashboard
+```
 
 ---
 
-## Community
+## 🔐 For Security Teams (Optional)
 
-**Discord:** https://discord.gg/7Mzcc2EY
-
-- `#scan-support` - Get help in 5 minutes
-- `#threat-feed` - See anonymized attacks blocked
-- `#feature-requests` - Shape the roadmap
-
----
-
-## For Security Teams (Optional Verification)
-
+Verify before install:
 ```bash
 git clone https://github.com/vigil-xy/scan.git
 cd scan
-bash scripts/verify_installer.sh  # ✅ Shows Ed25519 signature verification
-vigil-scan --json --slack $SLACK_WEBHOOK
+bash scripts/verify_installer.sh  # ✅ Ed25519 signature verification
 ```
 
 ---
 
-## Replit Dashboard
+## 💬 Community
 
-Launch your own monitoring dashboard:
+- **Discord:** https://discord.gg/7Mzcc2EY
+- **GitHub:** https://github.com/vigil-xy/scan
+
+---
+
+## 📦 Platform Support
+
+✅ **Linux** (AMD64, ARM64)  
+✅ **macOS** (Intel, Apple Silicon)
+
+Installer auto-detects your system.
+
+---
+
+## 🛠️ Development
 
 ```bash
+# 1. Fork & clone
 git clone https://github.com/vigil-xy/scan.git
-cd scan/repl-dashboard
-python server.py
-# Visit: http://localhost:8080
-```
 
-Dashboard features:
-- Real-time rogue port detection
-- Secret leak tracking
-- Process monitoring
-- Immutable audit logs
+# 2. Make changes
+cd scan
+make test
+
+# 3. Build
+make build
+
+# 4. Test dashboard
+./build/vigil-scan dashboard
+
+# 5. Submit PR
+gh pr create --title "feat: my cool feature"
+```
 
 ---
 
-## Platform Support
+## 🗺️ Roadmap
 
-| Platform | Arch | Status |
-|----------|------|--------|
-| Linux | AMD64 | ✅ |
-| Linux | ARM64 | ✅ |
-| macOS | AMD64 | ✅ |
-| macOS | ARM64 (Apple Silicon) | ✅ |
-
-The installer automatically detects your platform and downloads the correct binary.
+- [x] Multi-platform binaries (v0.2.0)
+- [x] Rogue port detection (v0.2.0)
+- [x] Local CRM dashboard (v0.2.0)
+- [ ] eBPF kernel probes (v0.3.0)
+- [ ] Kubernetes operator (v0.4.0)
+- [ ] Cloud-native SaaS (v1.0.0)
 
 ---
 
-## Advanced Usage
+## ⚖️ License
 
-### MCP Server (Claude Desktop)
+MIT. Use it. Break it. Fix it. Share it.
+
+---
+
+## 🎯 Final Ask
+
+If you're building AI agents, you're already in the red team's crosshairs. Don't ship without guardrails.
 
 ```bash
-vigil-scan --mcp --slack $SLACK_WEBHOOK
+curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh
+vigil-scan dashboard
 ```
 
-### Docker Container
+**Star ⭐ the repo** if you want Kubernetes operator next!
 
-```bash
-docker run -d my-ai-agent sh -c "curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh && vigil-scan & my-agent"
-```
+Then join the Discord: https://discord.gg/7Mzcc2EY
 
-### Kubernetes Pod
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Pod
-spec:
-  initContainers:
-  - name: vigil
-    image: ghcr.io/vigil-xy/vigil:latest
-    command: ["sh", "-c", "vigil-scan --k8s"]
+Let's make agentic AI safer. Together.
