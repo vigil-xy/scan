@@ -19,8 +19,19 @@ No config. No agents. Just a single binary that watches your back.
 ### Install & Run
 
 ```bash
-# Install & run immediately
-curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh
+# Recommended: verify the installer before running
+curl -sSL -o /tmp/vigil.sh https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh
+curl -sSL -o /tmp/vigil.sh.sha256 https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh.sha256
+curl -sSL -o /tmp/vigil_ed25519_pub.pem https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil_ed25519_pub.pem
+
+# verify checksum
+sha256sum -c /tmp/vigil.sh.sha256
+
+# verify signature (OpenSSL with Ed25519)
+openssl pkeyutl -verify -pubin -inkey /tmp/vigil_ed25519_pub.pem -in /tmp/vigil.sh -sigfile /tmp/vigil.sh.sig || echo "signature verify failed or not present"
+
+# if verification succeeds, run installer
+sh /tmp/vigil.sh
 
 # Or build from source
 git clone https://github.com/vigil-sec/vigil.git
