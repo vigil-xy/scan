@@ -38,7 +38,7 @@ case "$ARCH" in
     exit 1
     ;;
 esac
-BINARY_NAME="vigil-${OS_TYPE}-${ARCH_TYPE}"
+BINARY_NAME="vigil-scan-${OS_TYPE}-${ARCH_TYPE}"
 DOWNLOAD_URL="${RELEASE_URL}/${BINARY_NAME}"
 
 echo "🔍 Vigil Security Scanner v${VERSION}"
@@ -72,10 +72,10 @@ chmod +x "$BINARY_PATH"
 # Try to install system-wide (may require sudo)
 if [ -w "$INSTALL_DIR" ]; then
   cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
-  echo "✅ Installed to $INSTALL_DIR/vigil"
+  echo "✅ Installed to $INSTALL_DIR/vigil-scan"
 elif sudo -n true 2>/dev/null; then
   sudo cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
-  echo "✅ Installed to $INSTALL_DIR/vigil"
+  echo "✅ Installed to $INSTALL_DIR/vigil-scan"
 else
   # Install to user bin
   mkdir -p ~/.local/bin
@@ -101,5 +101,11 @@ if command -v docker &> /dev/null && docker ps &> /dev/null; then
 elif [ -S "$XDG_RUNTIME_DIR/docker.sock" ] 2>/dev/null; then
   exec vigil --attach-docker "$@"
 else
-  exec vigil "$@"
+  BINARY_EXEC="$INSTALL_DIR/vigil-scan"
+if [ ! -x "$BINARY_EXEC" ]; then
+  echo "❌ Binary not executable at: $BINARY_EXEC"
+  exit 1
+fi
+"
+$BINARY_EXEC" "$@"
 fi
