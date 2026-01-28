@@ -44,7 +44,7 @@ make build
 
 ```bash
 # See what would be blocked without killing anything
-vigil --dry-run
+vigil-scan --dry-run
 
 # Output:
 # 🔍 Found 3 exposed secrets
@@ -110,7 +110,7 @@ vigil
 
 ```bash
 # In your MCP server directory
-vigil --mcp --slack $SLACK_WEBHOOK
+vigil-scan --mcp --slack $SLACK_WEBHOOK
 
 # Now if prompt injection tries to expose your env, Vigil kills it
 ```
@@ -119,7 +119,7 @@ vigil --mcp --slack $SLACK_WEBHOOK
 
 ```bash
 # Run inside container at startup
-docker run -d my-ai-agent sh -c "curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh && vigil & my-agent"
+docker run -d my-ai-agent sh -c "curl -sSL https://github.com/vigil-xy/scan/releases/download/v0.1.0/vigil.sh | sh && vigil-scan & my-agent"
 
 # Or as a sidecar
 docker-compose.yml:
@@ -139,7 +139,7 @@ spec:
   initContainers:
   - name: vigil
     image: ghcr.io/vigil-sec/vigil:latest
-    command: ["sh", "-c", "vigil --k8s"]
+    command: ["sh", "-c", "vigil-scan --k8s"]
 EOF
 ```
 

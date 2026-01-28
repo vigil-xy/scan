@@ -1,6 +1,6 @@
 .PHONY: build build-linux build-darwin build-all clean test run help
 
-BINARY=vigil
+BINARY=vigil-scan
 VERSION?=0.1.0
 BUILD_DIR=./build
 CMD_DIR=./cmd/vigil
