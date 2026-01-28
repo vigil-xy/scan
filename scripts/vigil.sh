@@ -63,11 +63,14 @@ cp "$BINARY_PATH" "${INSTALL_DIR}/${FINAL_BINARY_NAME}"
 echo "✅ Installed to ${INSTALL_DIR}/${FINAL_BINARY_NAME}"
 
 # Add to PATH if needed
-if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
-  SHELL_RC="$HOME/.$(basename $SHELL)rc"
-  echo "export PATH=\"${INSTALL_DIR}:\$PATH\"" >> "$SHELL_RC"
-  echo "   Added ${INSTALL_DIR} to PATH (restart terminal or: source $SHELL_RC)"
-fi
+case ":$PATH:" in
+  *":${INSTALL_DIR}:"*) ;;
+  *)
+    SHELL_RC="$HOME/.$(basename $SHELL)rc"
+    echo "export PATH=\"${INSTALL_DIR}:\$PATH\"" >> "$SHELL_RC"
+    echo "   Added ${INSTALL_DIR} to PATH (restart terminal or: source $SHELL_RC)"
+    ;;
+esac
 
 # Non-blocking Docker detection
 BINARY_EXEC="${INSTALL_DIR}/${FINAL_BINARY_NAME}"
