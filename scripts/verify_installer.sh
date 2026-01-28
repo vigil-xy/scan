@@ -15,7 +15,17 @@ curl -sSL -o "$TMPDIR/vigil_ed25519_pub.pem" "$RELEASE_BASE/vigil_ed25519_pub.pe
 curl -sSL -o "$TMPDIR/expected_fingerprint.txt" "$RAW_BASE/vigil_ed25519_pub_fingerprint.txt"
 
 echo "[*] Verifying checksum"
-sha256sum -c "$TMPDIR/vigil.sh.sha256"
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256sum -c "$TMPDIR/vigil.sh.sha256"
+else
+  expected=$(awk '{print $1}' "$TMPDIR/vigil.sh.sha256")
+  actual=$(shasum -a 256 "$TMPDIR/vigil.sh" | awk '{print $1}')
+  if [ "$expected" != "$actual" ]; then
+    echo "[!] Checksum mismatch: expected $expected, got $actual" >&2
+    exit 1
+  fi
+  echo "[*] Checksum verification: OK"
+fi
 
 if [ -f "$TMPDIR/vigil.sh.sig" ]; then
   echo "[*] Verifying signature with OpenSSL (Ed25519)"
