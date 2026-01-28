@@ -30,7 +30,7 @@ case "$ARCH" in
   x86_64)
     ARCH_TYPE="amd64"
     ;;
-  aarch64)
+  aarch64|arm64)  # Add |arm64 here
     ARCH_TYPE="arm64"
     ;;
   *)
@@ -38,7 +38,6 @@ case "$ARCH" in
     exit 1
     ;;
 esac
-
 BINARY_NAME="vigil-${OS_TYPE}-${ARCH_TYPE}"
 DOWNLOAD_URL="${RELEASE_URL}/${BINARY_NAME}"
 
