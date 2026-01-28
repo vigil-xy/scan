@@ -1,12 +1,11 @@
 #!/bin/bash
-# vigil.sh - Install and run vigil security scanner
-# Usage: curl -sSL https://vigil.sh | sh
+# vigil-scan.sh - Install and run vigil security scanner
 
-set -e
+set -euo pipefail
 
-VERSION="0.1.0"
-REPO="vigil-sec/vigil"
-RELEASE_URL="https://github.com/$REPO/releases/latest/download"
+VERSION="0.2.0"
+REPO="vigil-xy/scan"
+RELEASE_URL="https://github.com/${REPO}/releases/latest/download"
 INSTALL_DIR="${VIGIL_INSTALL_DIR:-$HOME/.local/bin}"
 
 # Detect OS and architecture
@@ -14,98 +13,77 @@ OS=$(uname -s)
 ARCH=$(uname -m)
 
 case "$OS" in
-  Linux*)
-    OS_TYPE="linux"
-    ;;
-  Darwin*)
-    OS_TYPE="darwin"
-    ;;
-  *)
-    echo "❌ Unsupported OS: $OS"
-    exit 1
-    ;;
+  Linux*)  OS_TYPE="linux" ;;
+  Darwin*) OS_TYPE="darwin" ;;
+  *) echo "❌ Unsupported OS: $OS"; exit 1 ;;
 esac
 
 case "$ARCH" in
-  x86_64)
-    ARCH_TYPE="amd64"
-    ;;
-  aarch64|arm64)  # Add |arm64 here
-    ARCH_TYPE="arm64"
-    ;;
-  *)
-    echo "❌ Unsupported architecture: $ARCH"
-    exit 1
-    ;;
+  x86_64)    ARCH_TYPE="amd64" ;;
+  aarch64|arm64) ARCH_TYPE="arm64" ;;
+  *) echo "❌ Unsupported architecture: $ARCH"; exit 1 ;;
 esac
+
 BINARY_NAME="vigil-scan-${OS_TYPE}-${ARCH_TYPE}"
-DOWNLOAD_URL="${RELEASE_URL}/${BINARY_NAME}"
+FINAL_BINARY_NAME="vigil-scan"
 
 echo "🔍 Vigil Security Scanner v${VERSION}"
-echo "📦 Downloading $BINARY_NAME..."
+echo "📦 Downloading ${BINARY_NAME}..."
 
-# Download the binary
+# Create temp dir
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-BINARY_PATH="$TEMP_DIR/$BINARY_NAME"
-if ! curl -sSL -o "$BINARY_PATH" "$DOWNLOAD_URL"; then
+BINARY_PATH="${TEMP_DIR}/${BINARY_NAME}"
+DOWNLOAD_URL="${RELEASE_URL}/${BINARY_NAME}"
+
+# Download with fallback
+if ! curl -sSL --fail -o "$BINARY_PATH" "$DOWNLOAD_URL" 2>/dev/null; then
   echo "❌ Failed to download from $DOWNLOAD_URL"
-  echo "   Falling back to local build..."
+  echo "   Attempting to build from source..."
   
-  # Fallback: build from source if available
-  if command -v go &> /dev/null; then
-    echo "🔨 Building from source..."
+  if command -v go >/dev/null 2>&1; then
     TEMP_BUILD=$(mktemp -d)
+    git clone -q "https://github.com/${REPO}.git" "$TEMP_BUILD" 2>/dev/null
     cd "$TEMP_BUILD"
-    git clone https://github.com/vigil-sec/vigil.git .
-    go build -o "$BINARY_PATH" ./cmd/vigil
-    cd -
+    GOOS="${OS_TYPE}" GOARCH="${ARCH_TYPE}" go build -o "$BINARY_PATH" ./cmd/vigil 2>/dev/null
+    cd - >/dev/null
+    rm -rf "$TEMP_BUILD"
   else
-    echo "❌ curl failed and Go not installed. Please install Go or check network."
+    echo "❌ Go not installed and binary unavailable for ${OS_TYPE}-${ARCH_TYPE}"
     exit 1
   fi
 fi
 
 chmod +x "$BINARY_PATH"
 
-# Try to install system-wide (may require sudo)
-if [ -w "$INSTALL_DIR" ]; then
-  cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
-  echo "✅ Installed to $INSTALL_DIR/vigil-scan"
-elif sudo -n true 2>/dev/null; then
-  sudo cp "$BINARY_PATH" "$INSTALL_DIR/vigil-scan"
-  echo "✅ Installed to $INSTALL_DIR/vigil-scan"
-else
-  # Install to user bin
-  mkdir -p ~/.local/bin
-  cp "$BINARY_PATH" ~/.local/bin/vigil-scan
+# Install
+mkdir -p "$INSTALL_DIR"
+cp "$BINARY_PATH" "${INSTALL_DIR}/${FINAL_BINARY_NAME}"
+echo "✅ Installed to ${INSTALL_DIR}/${FINAL_BINARY_NAME}"
 
-# Add to PATH if not already there
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-  echo "   (added ~/.local/bin to PATH, restart terminal or run: source ~/.zshrc)"
-fi
-  echo "✅ Installed to ~/.local/bin/vigil-scan - added to PATH"
-  echo "   (add ~/.local/bin to your PATH)"
+# Add to PATH if needed
+if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
+  SHELL_RC="$HOME/.$(basename $SHELL)rc"
+  echo "export PATH=\"${INSTALL_DIR}:\$PATH\"" >> "$SHELL_RC"
+  echo "   Added ${INSTALL_DIR} to PATH (restart terminal or: source $SHELL_RC)"
 fi
 
-# Run the scan
+# Non-blocking Docker detection
+BINARY_EXEC="${INSTALL_DIR}/${FINAL_BINARY_NAME}"
+DOCKER_AVAILABLE=0
+
+if command -v docker >/dev/null 2>&1; then
+  timeout 1 docker info >/dev/null 2>&1 && DOCKER_AVAILABLE=1
+fi
+
+# Run scan
 echo ""
 echo "🚀 Running security scan..."
 echo ""
 
-# Determine which attachment method to use
-if command -v docker &> /dev/null && docker ps &> /dev/null; then
-  exec vigil --attach-docker "$@"
-elif [ -S "$XDG_RUNTIME_DIR/docker.sock" ] 2>/dev/null; then
-  exec vigil --attach-docker "$@"
+if [ $DOCKER_AVAILABLE -eq 1 ]; then
+  exec "$BINARY_EXEC" --attach-docker "$@"
 else
-  BINARY_EXEC="$INSTALL_DIR/vigil-scan"
-if [ ! -x "$BINARY_EXEC" ]; then
-  echo "❌ Binary not executable at: $BINARY_EXEC"
-  exit 1
-fi
-"
-$BINARY_EXEC" "$@"
+  exec "$BINARY_EXEC" "$@"
 fi

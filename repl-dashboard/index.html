@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vigil Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-green-400 font-mono p-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-4xl font-bold mb-8 text-red-500">⚡ VIGIL DASHBOARD v0.2.0</h1>
+    
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="bg-gray-900 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400">Rogue Ports</h2>
+        <div id="ports" class="mt-4">Loading...</div>
+      </div>
+      <div class="bg-gray-900 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400">Live Processes</h2>
+        <div id="processes" class="mt-4">Loading...</div>
+      </div>
+      <div class="bg-gray-900 p-4 rounded border border-red-500">
+        <h2 class="text-xl text-red-400">Secret Leaks</h2>
+        <div id="secrets" class="mt-4">Loading...</div>
+      </div>
+    </div>
+
+    <div class="bg-gray-900 p-6 rounded border border-red-500">
+      <h2 class="text-2xl text-red-400 mb-4">Quick Install</h2>
+      <pre class="bg-black p-4 rounded text-green-400">curl -sSL https://raw.githubusercontent.com/vigil-xy/scan/main/scripts/vigil.sh | sh</pre>
+      <p class="mt-4 text-gray-400">Join the resistance: <a href="https://discord.gg/7Mzcc2EY" class="text-red-400">Discord</a></p>
+    </div>
+  </div>
+
+  <script>
+    // Fetch data from local API (see server.py below)
+    async function loadData() {
+      try {
+        const [ports, processes, secrets] = await Promise.all([
+          fetch('/api/ports').then(r => r.json()),
+          fetch('/api/processes').then(r => r.json()),
+          fetch('/api/secrets').then(r => r.json())
+        ]);
+        
+        document.getElementById('ports').innerHTML = ports.join('<br>') || '✅ No rogue ports';
+        document.getElementById('processes').innerHTML = processes.join('<br>') || '✅ Monitoring active';
+        document.getElementById('secrets').innerHTML = secrets.join('<br>') || '✅ No leaked secrets';
+      } catch(e) {
+        console.error('API not ready:', e);
+      }
+    }
+    
+    loadData();
+    setInterval(loadData, 5000);
+  </script>
+</body>
+</html>
