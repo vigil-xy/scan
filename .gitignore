@@ -1,2 +1,3 @@
 vigil_ed25519_priv.pem
 **/vigil_ed25519_priv.pem
+build/vigil-scan*
