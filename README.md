@@ -132,22 +132,7 @@ make build
 gh pr create --title "feat: my cool feature"
 ```
 
----
 
-## 🗺️ Roadmap
-
-- [x] Multi-platform binaries (v0.2.0)
-- [x] Rogue port detection (v0.2.0)
-- [x] Local CRM dashboard (v0.2.0)
-- [ ] eBPF kernel probes (v0.3.0)
-- [ ] Kubernetes operator (v0.4.0)
-- [ ] Cloud-native SaaS (v1.0.0)
-
----
-
-## ⚖️ License
-
-MIT. Use it. Break it. Fix it. Share it.
 
 ---
 
