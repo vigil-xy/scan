@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 # vigil-scan.sh - Install and run vigil security scanner
 
-set -euo pipefail
+set -eu
 
 VERSION="0.2.0"
 REPO="vigil-xy/scan"
